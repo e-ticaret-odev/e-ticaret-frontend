@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ürünler | E-Ticaret</title>
+    <link rel="stylesheet" href="../styles/global.css">
+    <link rel="stylesheet" href="../styles/toast.css">
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+        
+        main {
+            flex: 1;
+            padding: 30px 0;
+        }
+        
+        .products-header {
+            margin-bottom: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        
+        .products-title {
+            margin: 0;
+            color: var(--text-color);
+        }
+        
+        .products-count {
+            color: var(--light-text);
+            font-weight: normal;
+            margin-left: 10px;
+        }
+        
+        .products-filters {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+        
+        .filter-select {
+            padding: 8px 15px;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius);
+            background-color: white;
+            min-width: 150px;
+        }
+        
+        .products-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+        
+        .loading-spinner {
+            text-align: center;
+            padding: 50px 0;
+        }
+        
+        .loading-spinner::after {
+            content: "";
+            display: inline-block;
+            width: 40px;
+            height: 40px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .no-products {
+            text-align: center;
+            padding: 50px 0;
+            color: var(--light-text);
+        }
+    </style>
+</head>
+<body>
+    <div id="navbar"></div>
+    
+    <main>
+        <div class="container">
+            <div class="products-header">
+                <h1 class="products-title">
+                    Ürünler <span class="products-count" id="productsCount"></span>
+                </h1>
+                
+                <div class="products-filters">
+                    <select class="filter-select" id="sortSelect">
+                        <option value="default">Sıralama</option>
+                        <option value="price_asc">Fiyat (Artan)</option>
+                        <option value="price_desc">Fiyat (Azalan)</option>
+                        <option value="name_asc">İsim (A-Z)</option>
+                        <option value="name_desc">İsim (Z-A)</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div id="productsContainer">
+                <div class="loading-spinner"></div>
+            </div>
+        </div>
+    </main>
+    
+    <script type="module">
+        import { renderNavbar } from '../components/navbar.js';
+        import { renderProductCards } from '../components/product-card.js';
+        import { getProducts } from '../api/products.js';
+        import { showToast } from '../utils/api.js';
+        
+        // Sayfa yüklendiğinde çalışacak kodlar
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Navigasyon çubuğunu render et
+            renderNavbar();
+            
+            // Ürünleri yükle
+            await loadProducts();
+            
+            // Sıralama değiştiğinde olayını ekle
+            const sortSelect = document.getElementById('sortSelect');
+            sortSelect.addEventListener('change', async () => {
+                await loadProducts(); // Sıralama değiştiğinde ürünleri yeniden yükle
+            });
+        });
+        
+        // Ürünleri API'den yükle ve ekrana bas
+        async function loadProducts() {
+            const productsContainer = document.getElementById('productsContainer');
+            const productsCount = document.getElementById('productsCount');
+            const sortSelect = document.getElementById('sortSelect');
+            
+            productsContainer.innerHTML = '<div class="loading-spinner"></div>'; // Yükleme animasyonunu göster
+            
+            try {
+                const products = await getProducts(); // API'den ürün dizisini al
+                console.log('products:', products);
+                // products her zaman bir dizi olmalı (getProducts garantiliyor)
+                console.log('loadProducts: ' + products.length + ' ürün render edilecek.');
+                
+                productsCount.textContent = '(' + products.length + ')'; // Ürün sayısını güncelle
+                
+                if (products.length === 0) {
+                    productsContainer.innerHTML = '<div class="no-products">Hiç ürün bulunamadı.</div>';
+                    return;
+                }
+                
+                // Ürünleri sırala (sortProducts ürünlerin dizi olduğunu varsayar)
+                const sortedProducts = sortProducts(products, sortSelect.value);
+                
+                // Ürün kartlarını oluştur ve ekrana bas
+                productsContainer.innerHTML = '<div class="products-grid" id="productsGrid"></div>'; // Grid için konteyner
+                renderProductCards(sortedProducts, 'productsGrid'); // Bileşen ile ürünleri render et
+                
+            } catch (error) {
+                console.error('Ürünler yüklenirken veya render edilirken genel bir hata oluştu:', error);
+                productsContainer.innerHTML = '<div class="no-products">Ürünler yüklenirken bir sorun oluştu. Lütfen daha sonra tekrar deneyin.</div>';
+                showToast('Ürünler yüklenirken bir hata oluştu.', 'error');
+            }
+        }
+        
+        // Ürünleri belirlenen kritere göre sırala
+        function sortProducts(products, sortOption) {
+            // products null/undefined/dizi değilse işlemi atla
+            if (!products || !Array.isArray(products)) {
+                console.error('Sıralanacak ürünler bir dizi değil:', products);
+                return []; // Hata durumunda boş dizi dön, böylece sonraki adımlar patlamaz
+            }
+            
+            const sortedProducts = [...products]; // Orijinal diziyi değiştirmemek için kopyala
+            
+            switch (sortOption) {
+                case 'price_asc':
+                    sortedProducts.sort((a, b) => {
+                        const priceA = parseFloat(a.price) || 0;
+                        const priceB = parseFloat(b.price) || 0;
+                        return priceA - priceB;
+                    });
+                    break;
+                case 'price_desc':
+                    sortedProducts.sort((a, b) => {
+                        const priceA = parseFloat(a.price) || 0;
+                        const priceB = parseFloat(b.price) || 0;
+                        return priceB - priceA;
+                    });
+                    break;
+                case 'name_asc':
+                    sortedProducts.sort((a, b) => {
+                        const nameA = a.name || '';
+                        const nameB = b.name || '';
+                        return nameA.localeCompare(nameB);
+                    });
+                    break;
+                case 'name_desc':
+                    sortedProducts.sort((a, b) => {
+                        const nameA = a.name || '';
+                        const nameB = b.name || '';
+                        return nameB.localeCompare(nameA);
+                    });
+                    break;
+                default:
+                    // Varsayılan sıralama (API'den geldiği gibi)
+                    break;
+            }
+            
+            return sortedProducts;
+        }
+    </script>
+</body>
+</html> 

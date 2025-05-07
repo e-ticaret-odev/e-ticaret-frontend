@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Giriş Yap | E-Ticaret</title>
+    <link rel="stylesheet" href="../styles/global.css">
+    <link rel="stylesheet" href="../styles/form.css">
+</head>
+<body>
+    <div id="navbar"></div>
+    
+    <main class="auth-container">
+        <div class="auth-form-container">
+            <h1 class="auth-title">Hesabınıza Giriş Yapın</h1>
+            <p class="auth-description">Hesabınıza giriş yaparak alışverişe başlayabilir ve geçmiş siparişlerinizi görüntüleyebilirsiniz.</p>
+            
+            <form id="loginForm" class="auth-form">
+                <div class="form-group">
+                    <label for="email" class="form-label">E-posta Adresi</label>
+                    <input type="email" id="email" name="email" class="form-input" placeholder="ornek@email.com" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="password" class="form-label">Şifre</label>
+                    <input type="password" id="password" name="password" class="form-input" placeholder="Şifreniz" required>
+                </div>
+                
+                <button type="submit" class="form-button">Giriş Yap</button>
+            </form>
+            
+            <div class="auth-links">
+                Hesabınız yok mu? <a href="register.html">Kayıt Olun</a>
+            </div>
+        </div>
+    </main>
+    
+    <script type="module">
+        import { renderNavbar } from '../components/navbar.js';
+        import { loginUser, validateForm, setFormLoading, applyApiErrors } from '../scripts/auth.js';
+        import { showToast, showMessageFromUrl, showFormError } from '../utils/messages.js';
+        import { checkAlreadyLoggedIn } from '../utils/auth.js';
+        
+        // Sayfa yüklendiğinde çalışacak kodlar
+        document.addEventListener('DOMContentLoaded', () => {
+            // Navigasyon çubuğunu render et
+            renderNavbar();
+            
+            // Kullanıcı zaten giriş yapmışsa anasayfaya yönlendir
+            if (checkAlreadyLoggedIn()) return;
+            
+            // URL'den mesajları kontrol et ve göster (örn: ?error=... veya ?registered=true)
+            showMessageFromUrl();
+            
+            // Login formunu işle
+            const loginForm = document.getElementById('loginForm');
+            
+            loginForm.addEventListener('submit', async (event) => {
+                event.preventDefault();
+                
+                // Form doğrulama
+                if (!validateForm(loginForm)) {
+                    return; // Validation başarısız ise işlemi durdur
+                }
+                
+                // Form verilerini topla
+                const email = loginForm.email.value.trim();
+                const password = loginForm.password.value;
+                
+                // Form submit durumuna geç
+                setFormLoading(loginForm, true);
+                
+                try {
+                    console.log('Giriş denemesi yapılıyor:', email);
+                    
+                    // Login API'sine istek at
+                    const result = await loginUser(email, password);
+                    console.log('Login API sonucu:', result);
+                    
+                    if (result.success) {
+                        showToast('Giriş başarılı! Yönlendiriliyorsunuz...', 'success');
+                        
+                        // Kısa bir gecikme ile products sayfasına yönlendir
+                        setTimeout(() => {
+                            window.location.href = 'products.html';
+                        }, 1000);
+                    } else {
+                        // API'den dönen hataları göster
+                        showToast(result.message || 'Giriş yapılamadı', 'error');
+                        
+                        // API'den dönen alan hatalarını göster
+                        if (result.errors) {
+                            applyApiErrors(loginForm, result.errors);
+                        }
+                        
+                        // 400 Status Code tipik hata mesajları
+                        if (result.message === 'Invalid credentials') {
+                            showFormError(loginForm.email, 'E-posta veya şifre hatalı');
+                            showFormError(loginForm.password, 'E-posta veya şifre hatalı');
+                        }
+                        
+                        setFormLoading(loginForm, false);
+                    }
+                } catch (error) {
+                    console.error('Login işlemi sırasında hata (detaylı):', {
+                        message: error.message,
+                        stack: error.stack,
+                        error: error
+                    });
+                    showToast('Beklenmeyen bir hata oluştu. Lütfen daha sonra tekrar deneyin.', 'error');
+                    setFormLoading(loginForm, false);
+                }
+            });
+        });
+    </script>
+</body>
+</html> 

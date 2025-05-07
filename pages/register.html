@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kayıt Ol | E-Ticaret</title>
+    <link rel="stylesheet" href="../styles/global.css">
+    <link rel="stylesheet" href="../styles/form.css">
+</head>
+<body>
+    <div id="navbar"></div>
+    
+    <main class="auth-container">
+        <div class="auth-form-container">
+            <h1 class="auth-title">Yeni Hesap Oluşturun</h1>
+            <p class="auth-description">Hesap oluşturarak hızlı ödeme, sipariş takibi ve özel indirimlere ulaşabilirsiniz.</p>
+            
+            <form id="registerForm" class="auth-form">
+                <div class="form-group">
+                    <label for="name" class="form-label">Ad Soyad</label>
+                    <input type="text" id="name" name="name" class="form-input" placeholder="Ad ve soyadınız" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="email" class="form-label">E-posta Adresi</label>
+                    <input type="email" id="email" name="email" class="form-input" placeholder="ornek@email.com" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="phone" class="form-label">Telefon Numarası</label>
+                    <input type="tel" id="phone" name="phone" class="form-input" placeholder="5XXXXXXXXX" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="password" class="form-label">Şifre</label>
+                    <input type="password" id="password" name="password" class="form-input" placeholder="En az 6 karakter" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="passwordConfirm" class="form-label">Şifre Tekrar</label>
+                    <input type="password" id="passwordConfirm" name="passwordConfirm" class="form-input" placeholder="Şifrenizi tekrar girin" required>
+                </div>
+                
+                <button type="submit" class="form-button">Kayıt Ol</button>
+            </form>
+            
+            <div class="auth-links">
+                Zaten hesabınız var mı? <a href="login.html">Giriş Yapın</a>
+            </div>
+        </div>
+    </main>
+    
+    <script type="module">
+        import { renderNavbar } from '../components/navbar.js';
+        import { registerUser, validateForm, setFormLoading, applyApiErrors } from '../scripts/auth.js';
+        import { showToast, showMessageFromUrl } from '../utils/messages.js';
+        import { checkAlreadyLoggedIn } from '../utils/auth.js';
+        
+        // Sayfa yüklendiğinde çalışacak kodlar
+        document.addEventListener('DOMContentLoaded', () => {
+            // Navigasyon çubuğunu render et
+            renderNavbar();
+            
+            // Kullanıcı zaten giriş yapmışsa anasayfaya yönlendir
+            if (checkAlreadyLoggedIn()) return;
+            
+            // URL'den mesajları kontrol et ve göster
+            showMessageFromUrl();
+            
+            // Register formunu işle
+            const registerForm = document.getElementById('registerForm');
+            
+            registerForm.addEventListener('submit', async (event) => {
+                event.preventDefault();
+                
+                // Form doğrulama
+                if (!validateForm(registerForm)) {
+                    return; // Validation başarısız ise işlemi durdur
+                }
+                
+                // Form verilerini topla
+                const userData = {
+                    name: registerForm.name.value.trim(),
+                    email: registerForm.email.value.trim(),
+                    password: registerForm.password.value,
+                    phone: registerForm.phone.value.trim()
+                };
+                
+                // Form submit durumuna geç
+                setFormLoading(registerForm, true);
+                
+                try {
+                    // Register API'sine istek at
+                    const result = await registerUser(userData);
+                    
+                    if (result.success) {
+                        showToast('Kayıt işlemi başarılı! Giriş sayfasına yönlendiriliyorsunuz...', 'success');
+                        
+                        // Kısa bir gecikme ile login sayfasına yönlendir
+                        setTimeout(() => {
+                            window.location.href = 'login.html?registered=true';
+                        }, 1500);
+                    } else {
+                        // API'den dönen hataları göster
+                        showToast(result.message || 'Kayıt işlemi başarısız oldu', 'error');
+                        
+                        // API'den dönen alan hatalarını göster
+                        if (result.errors) {
+                            applyApiErrors(registerForm, result.errors);
+                        }
+                        
+                        setFormLoading(registerForm, false);
+                    }
+                } catch (error) {
+                    console.error('Kayıt işlemi sırasında hata:', error);
+                    showToast('Beklenmeyen bir hata oluştu. Lütfen daha sonra tekrar deneyin.', 'error');
+                    setFormLoading(registerForm, false);
+                }
+            });
+        });
+    </script>
+</body>
+</html> 
