@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Siparişlerim | E-Ticaret</title>
+    <link rel="stylesheet" href="../styles/main.css">
+    <style>
+        .orders-container {
+            max-width: 1200px;
+            margin: 30px auto;
+            padding: 20px;
+        }
+        
+        .orders-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .orders-title {
+            font-size: 1.8rem;
+            margin: 0;
+            color: var(--title-color, #333);
+        }
+        
+        .orders-empty {
+            text-align: center;
+            padding: 50px 0;
+            background-color: var(--secondary-bg-color);
+            border-radius: var(--radius);
+            margin: 20px 0;
+        }
+        
+        .order-card {
+            background-color: var(--bg-color);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius);
+            margin-bottom: 30px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        
+        .order-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+        }
+        
+        .order-header {
+            background-color: var(--secondary-bg-color);
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .order-id {
+            font-weight: bold;
+            margin: 0;
+            font-size: 1.1rem;
+        }
+        
+        .order-date {
+            color: var(--text-color-light);
+            font-size: 0.9rem;
+            margin: 5px 0 0 0;
+        }
+        
+        .order-status {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .status-pending {
+            background-color: #FFF3CD;
+            color: #856404;
+        }
+        
+        .status-processing {
+            background-color: #D1ECFF;
+            color: #0C5460;
+        }
+        
+        .status-completed {
+            background-color: #D4EDDA;
+            color: #155724;
+        }
+        
+        .status-cancelled {
+            background-color: #F8D7DA;
+            color: #721C24;
+        }
+        
+        .order-body {
+            padding: 20px;
+        }
+        
+        .order-items {
+            border-bottom: 1px solid var(--border-color-light);
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+        }
+        
+        .order-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 12px;
+            padding-bottom: 12px;
+            border-bottom: 1px dashed var(--border-color-light);
+        }
+        
+        .order-item:last-child {
+            margin-bottom: 0;
+            padding-bottom: 0;
+            border-bottom: none;
+        }
+        
+        .order-item-name {
+            flex: 1;
+            font-weight: 500;
+        }
+        
+        .order-item-quantity {
+            margin: 0 15px;
+            color: var(--text-color-light);
+            background-color: var(--secondary-bg-color);
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.85rem;
+        }
+        
+        .order-item-price {
+            font-weight: bold;
+            color: var(--accent-color);
+            min-width: 80px;
+            text-align: right;
+        }
+        
+        .order-summary {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 0 0;
+        }
+        
+        .order-total {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: var(--accent-color);
+        }
+        
+        .order-actions {
+            margin-top: 20px;
+            display: flex;
+            justify-content: flex-end;
+        }
+
+        .btn-sm {
+            padding: 8px 16px;
+            font-size: 0.9rem;
+        }
+        
+        .error-message {
+            padding: 20px;
+            background-color: #f8d7da;
+            color: #721c24;
+            border-radius: var(--radius);
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 30px;
+            color: var(--text-color-light);
+            font-style: italic;
+        }
+        
+        @media (max-width: 768px) {
+            .order-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+            
+            .order-status {
+                align-self: flex-start;
+            }
+            
+            .order-item {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 8px;
+            }
+            
+            .order-item-quantity {
+                margin: 5px 0;
+            }
+            
+            .order-item-price {
+                text-align: left;
+            }
+            
+            .order-summary {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+            
+            .order-total {
+                margin-bottom: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="navbar-container"></div>
+    
+    <main>
+        <div class="orders-container">
+            <div class="orders-header">
+                <h1 class="orders-title">Siparişlerim</h1>
+            </div>
+            
+            <div id="orders-content">
+                <div class="loading">Siparişler yükleniyor...</div>
+            </div>
+        </div>
+    </main>
+    
+    <div id="footer-container"></div>
+    
+    <script type="module">
+        import { getOrders } from '../api/orders.js';
+        import { isLoggedIn } from '../utils/auth.js';
+        
+        // Navbar ve footer bileşenlerini yükle
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Kullanıcı girişi kontrolü
+            if (!isLoggedIn()) {
+                window.location.href = 'login.html?redirect=orders.html';
+                return;
+            }
+            
+            const navbarContainer = document.getElementById('navbar-container');
+            const footerContainer = document.getElementById('footer-container');
+            
+            try {
+                const navbarModule = await import('../components/navbar.js');
+                const navbarComponent = navbarModule.default || navbarModule.createNavbar;
+                if (typeof navbarComponent === 'function') {
+                    navbarContainer.innerHTML = navbarComponent();
+                }
+            } catch (error) {
+                console.error('Navbar yüklenirken hata:', error);
+            }
+            
+            try {
+                const footerResponse = await fetch('../components/shared/footer.html');
+                const footerHtml = await footerResponse.text();
+                footerContainer.innerHTML = footerHtml;
+            } catch (error) {
+                console.error('Footer yüklenirken hata:', error);
+            }
+            
+            // Siparişleri yükle
+            loadOrders();
+        });
+        
+        // Siparişleri yükle
+        async function loadOrders() {
+            const ordersContentContainer = document.getElementById('orders-content');
+            
+            try {
+                const orders = await getOrders();
+                
+                if (!orders || orders.length === 0) {
+                    showEmptyOrders();
+                    return;
+                }
+                
+                renderOrders(orders);
+            } catch (error) {
+                console.error('Siparişler yüklenirken hata:', error);
+                ordersContentContainer.innerHTML = `<div class="error-message">Siparişler yüklenirken bir hata oluştu.</div>`;
+            }
+        }
+        
+        // Boş sipariş mesajı göster
+        function showEmptyOrders() {
+            const ordersContentContainer = document.getElementById('orders-content');
+            ordersContentContainer.innerHTML = `
+                <div class="orders-empty">
+                    <p>Henüz bir siparişiniz bulunmuyor.</p>
+                    <a href="products.html" class="btn btn-primary">Alışverişe Başla</a>
+                </div>
+            `;
+        }
+        
+        // Siparişleri göster
+        function renderOrders(orders) {
+            const ordersContentContainer = document.getElementById('orders-content');
+            
+            // Tarihe göre sırala (en yeni en üstte)
+            const sortedOrders = [...orders].sort((a, b) => {
+                return new Date(b.created_at) - new Date(a.created_at);
+            });
+            
+            const ordersHtml = sortedOrders.map(order => {
+                // Sipariş durumuna göre stil sınıfı
+                const statusClass = `status-${order.status}`;
+                
+                // Sipariş durumu Türkçe çevirisi
+                const statusText = getStatusText(order.status);
+                
+                // Sipariş tarihi formatı
+                const orderDate = new Date(order.created_at).toLocaleDateString('tr-TR', {
+                    day: 'numeric',
+                    month: 'long',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+                
+                // Sipariş öğeleri
+                const orderItems = order.items.map(item => `
+                    <div class="order-item">
+                        <div class="order-item-name">${item.product_name}</div>
+                        <div class="order-item-quantity">${item.quantity} adet</div>
+                        <div class="order-item-price">${parseFloat(item.price).toFixed(2)} TL</div>
+                    </div>
+                `).join('');
+                
+                return `
+                    <div class="order-card">
+                        <div class="order-header">
+                            <div>
+                                <h3 class="order-id">Sipariş #${order.id}</h3>
+                                <p class="order-date">${orderDate}</p>
+                            </div>
+                            <div class="order-status ${statusClass}">${statusText}</div>
+                        </div>
+                        <div class="order-body">
+                            <div class="order-items">
+                                ${orderItems}
+                            </div>
+                            <div class="order-summary">
+                                <div class="order-total">Toplam: ${parseFloat(order.total_amount).toFixed(2)} TL</div>
+                                <div class="order-actions">
+                                    <a href="order-detail.html?id=${order.id}" class="btn btn-sm">Sipariş Detayı</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            
+            ordersContentContainer.innerHTML = ordersHtml;
+        }
+        
+        // Sipariş durumu için Türkçe metin
+        function getStatusText(status) {
+            const statusMap = {
+                pending: 'Beklemede',
+                processing: 'İşleniyor',
+                completed: 'Tamamlandı',
+                cancelled: 'İptal Edildi'
+            };
+            
+            return statusMap[status] || status;
+        }
+    </script>
+</body>
+</html> 
