@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sipariş Detayı | E-Ticaret</title>
+    <link rel="stylesheet" href="../styles/main.css">
+    <style>
+        .order-detail-container {
+            max-width: 1200px;
+            margin: 30px auto;
+            padding: 20px;
+        }
+        
+        .order-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+            gap: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .order-title {
+            font-size: 1.8rem;
+            margin: 0 0 10px 0;
+            color: var(--title-color, #333);
+        }
+        
+        .order-date {
+            color: var(--text-color-light);
+            margin: 0;
+            font-size: 0.9rem;
+        }
+        
+        .order-status {
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: bold;
+            text-transform: uppercase;
+            margin-left: auto;
+            letter-spacing: 0.5px;
+        }
+        
+        .status-pending {
+            background-color: #FFF3CD;
+            color: #856404;
+        }
+        
+        .status-processing {
+            background-color: #D1ECFF;
+            color: #0C5460;
+        }
+        
+        .status-completed {
+            background-color: #D4EDDA;
+            color: #155724;
+        }
+        
+        .status-cancelled {
+            background-color: #F8D7DA;
+            color: #721C24;
+        }
+        
+        .order-section {
+            background-color: var(--bg-color);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius);
+            margin-bottom: 30px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+        
+        .section-header {
+            background-color: var(--secondary-bg-color);
+            padding: 15px 20px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .section-title {
+            margin: 0;
+            font-size: 1.2rem;
+            color: var(--title-color, #333);
+        }
+        
+        .section-content {
+            padding: 20px;
+        }
+        
+        .order-items-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .order-items-table th {
+            text-align: left;
+            padding: 12px 10px;
+            border-bottom: 1px solid var(--border-color);
+            background-color: var(--secondary-bg-color);
+            color: var(--text-color);
+            font-weight: 600;
+        }
+        
+        .order-items-table td {
+            padding: 15px 10px;
+            border-bottom: 1px solid var(--border-color-light);
+            vertical-align: middle;
+        }
+        
+        .order-items-table tr:last-child td {
+            border-bottom: none;
+        }
+        
+        .item-image {
+            width: 60px;
+            height: 60px;
+            object-fit: cover;
+            border-radius: var(--radius);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            display: block;
+        }
+        
+        .item-price,
+        .item-total {
+            text-align: right;
+            white-space: nowrap;
+            font-weight: 500;
+            color: var(--accent-color);
+        }
+        
+        .order-summary {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            align-items: flex-end;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid var(--border-color);
+        }
+        
+        .order-summary-row {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            max-width: 300px;
+            padding: 5px 0;
+        }
+        
+        .order-total {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: var(--accent-color);
+        }
+        
+        .order-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .btn-secondary {
+            padding: 10px 20px;
+            font-size: 0.95rem;
+        }
+        
+        .error-message {
+            padding: 20px;
+            background-color: #f8d7da;
+            color: #721c24;
+            border-radius: var(--radius);
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 30px;
+            color: var(--text-color-light);
+            font-style: italic;
+        }
+        
+        @media (max-width: 768px) {
+            .order-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 15px;
+            }
+            
+            .order-status {
+                margin-left: 0;
+                align-self: flex-start;
+            }
+            
+            .order-items-table {
+                display: block;
+                overflow-x: auto;
+                font-size: 0.95rem;
+            }
+            
+            .order-items-table th,
+            .order-items-table td {
+                padding: 10px 8px;
+            }
+            
+            .order-summary {
+                align-items: flex-start;
+                padding-top: 15px;
+            }
+            
+            .order-summary-row {
+                max-width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="navbar-container"></div>
+    
+    <main>
+        <div class="order-detail-container" id="order-detail">
+            <div class="loading">Sipariş detayları yükleniyor...</div>
+        </div>
+    </main>
+    
+    <div id="footer-container"></div>
+    
+    <script type="module">
+        import { getOrderById } from '../api/orders.js';
+        import { isLoggedIn } from '../utils/auth.js';
+        
+        // Navbar ve footer bileşenlerini yükle
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Kullanıcı girişi kontrolü
+            if (!isLoggedIn()) {
+                window.location.href = 'login.html?redirect=order-detail.html' + window.location.search;
+                return;
+            }
+            
+            const navbarContainer = document.getElementById('navbar-container');
+            const footerContainer = document.getElementById('footer-container');
+            
+            try {
+                const navbarModule = await import('../components/navbar.js');
+                const navbarComponent = navbarModule.default || navbarModule.createNavbar;
+                if (typeof navbarComponent === 'function') {
+                    navbarContainer.innerHTML = navbarComponent();
+                }
+            } catch (error) {
+                console.error('Navbar yüklenirken hata:', error);
+            }
+            
+            try {
+                const footerResponse = await fetch('../components/shared/footer.html');
+                const footerHtml = await footerResponse.text();
+                footerContainer.innerHTML = footerHtml;
+            } catch (error) {
+                console.error('Footer yüklenirken hata:', error);
+            }
+            
+            // Sipariş ID'sini URL'den al
+            const urlParams = new URLSearchParams(window.location.search);
+            const orderId = urlParams.get('id');
+            
+            if (!orderId) {
+                showErrorMessage('Sipariş ID bulunamadı!');
+                return;
+            }
+            
+            loadOrderDetails(orderId);
+        });
+        
+        // Sipariş detaylarını yükle
+        async function loadOrderDetails(orderId) {
+            const orderDetailContainer = document.getElementById('order-detail');
+            
+            try {
+                const order = await getOrderById(orderId);
+                
+                if (!order) {
+                    showErrorMessage('Sipariş bulunamadı!');
+                    return;
+                }
+                
+                // Başlık güncelleme
+                document.title = `Sipariş #${order.id} | E-Ticaret`;
+                
+                // Sipariş detay HTML'ini oluştur
+                const statusClass = `status-${order.status}`;
+                const statusText = getStatusText(order.status);
+                
+                // Sipariş tarihi formatı
+                const orderDate = new Date(order.created_at).toLocaleDateString('tr-TR', {
+                    day: 'numeric',
+                    month: 'long',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+                
+                const orderHtml = `
+                    <div class="order-header">
+                        <div>
+                            <h1 class="order-title">Sipariş #${order.id}</h1>
+                            <p class="order-date">${orderDate}</p>
+                        </div>
+                        <div class="order-status ${statusClass}">${statusText}</div>
+                    </div>
+                    
+                    <div class="order-section">
+                        <div class="section-header">
+                            <h2 class="section-title">Sipariş Detayları</h2>
+                        </div>
+                        <div class="section-content">
+                            <div class="table-responsive">
+                                <table class="order-items-table">
+                                    <thead>
+                                        <tr>
+                                            <th width="80">Ürün</th>
+                                            <th>Ürün Adı</th>
+                                            <th class="item-price">Birim Fiyat</th>
+                                            <th>Adet</th>
+                                            <th class="item-total">Toplam</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        ${order.items.map(item => `
+                                            <tr>
+                                                <td>
+                                                    <img src="${item.image || '../public/placeholder.jpg'}" alt="${item.product_name}" class="item-image" onerror="this.src='../public/placeholder.jpg'">
+                                                </td>
+                                                <td>
+                                                    <a href="product-detail.html?id=${item.product_id}">${item.product_name}</a>
+                                                </td>
+                                                <td class="item-price">${parseFloat(item.price).toFixed(2)} TL</td>
+                                                <td>${item.quantity}</td>
+                                                <td class="item-total">${(item.price * item.quantity).toFixed(2)} TL</td>
+                                            </tr>
+                                        `).join('')}
+                                    </tbody>
+                                </table>
+                            </div>
+                            
+                            <div class="order-summary">
+                                <div class="order-summary-row">
+                                    <span>Ara Toplam:</span>
+                                    <span>${parseFloat(order.total_amount).toFixed(2)} TL</span>
+                                </div>
+                                <div class="order-summary-row">
+                                    <span>Kargo:</span>
+                                    <span>0.00 TL</span>
+                                </div>
+                                <div class="order-summary-row order-total">
+                                    <span>Toplam:</span>
+                                    <span>${parseFloat(order.total_amount).toFixed(2)} TL</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="order-actions">
+                        <a href="orders.html" class="btn btn-secondary">Siparişlere Dön</a>
+                    </div>
+                `;
+                
+                orderDetailContainer.innerHTML = orderHtml;
+            } catch (error) {
+                console.error('Sipariş detayları yüklenirken hata:', error);
+                showErrorMessage('Sipariş detayları yüklenirken bir hata oluştu.');
+            }
+        }
+        
+        // Hata mesajı göster
+        function showErrorMessage(message) {
+            const orderDetailContainer = document.getElementById('order-detail');
+            orderDetailContainer.innerHTML = `<div class="error-message">${message}</div>`;
+        }
+        
+        // Sipariş durumu için Türkçe metin
+        function getStatusText(status) {
+            const statusMap = {
+                pending: 'Beklemede',
+                processing: 'İşleniyor',
+                completed: 'Tamamlandı',
+                cancelled: 'İptal Edildi'
+            };
+            
+            return statusMap[status] || status;
+        }
+    </script>
+</body>
+</html> 
